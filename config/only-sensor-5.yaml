@@ -1,0 +1,325 @@
+# All mmWave options require https://github.com/esphome/esphome/pull/5674
+
+#<<: !include ./secrets.yaml
+
+esphome:
+  name: "only-sensor-5"
+  friendly_name: "Only Sensor 5"
+  on_boot:
+    - priority: -100
+      then:
+        - switch.turn_on: multi_target
+
+esp32:
+  board: lolin_s2_mini
+  variant: esp32s2
+  framework:
+    type: esp-idf
+
+# Logging
+logger:
+  # baud_rate: 0
+  logs:
+    sensor: INFO
+    binary_sensor: INFO
+    text_sensor: INFO
+
+# Home Assistant API
+api:
+  encryption:
+    key: !secret ha_api_encryption_key
+  # Can comment this to reboot with no API
+  reboot_timeout: 0s
+
+# OTA
+ota:
+  safe_mode: true
+  password: !secret ota_pass
+  port: 3232
+
+# Wifi
+wifi:
+  enable_btm: false
+  enable_rrm: false
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: .corp.nowsci.com
+  # Hotspot fallback
+  ap:
+    ssid: !secret wifi_ap_ssid
+    password: !secret wifi_ap_pass
+# captive_portal:
+
+# Web server
+web_server:
+  port: 80
+  version: 2
+  include_internal: true
+  ota: false
+  local: true
+  auth:
+    username: !secret web_server_auth_user
+    password: !secret web_server_auth_pass
+  
+# mmWave uart
+uart:
+  id: uart_ld2450
+  tx_pin:
+    number: 5
+    # number: GPIO1
+  rx_pin:
+    number: 3
+    # number: GPIO3
+  baud_rate: 256000
+  # baud_rate: 38400
+  parity: NONE
+  stop_bits: 1
+
+# mmWave driver
+ld2450:
+  id: ld2450_radar
+  uart_id: uart_ld2450
+  throttle: 1000ms
+
+switch:
+  # Switch for toggling safe mode
+  - platform: safe_mode
+    name: "Use safe mode"
+    id: use_safe_mode
+
+  # mmWave bluetooth
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    bluetooth:
+      name: "Bluetooth"
+    multi_target:
+      id: multi_target
+      name: "Multi Target Tracking"
+
+text_sensor:
+  # mmWave
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    version:
+      name: "LD2450 Firmware"
+    mac_address:
+      name: "LD2450 BT MAC"
+    target_1:
+      direction:
+        name: "Target-1 Direction"
+    target_2:
+      direction:
+        name: "Target-2 Direction"
+    target_3:
+      direction:
+        name: "Target-3 Direction"
+
+number:
+  # PIR latency
+  - platform: template
+    name: PIR off latency
+    icon: mdi:clock-end
+    entity_category: config
+    id: pir_off_latency
+    min_value: 1
+    max_value: 120
+    initial_value: 10
+    optimistic: true
+    step: 1
+    restore_value: true
+    unit_of_measurement: seconds
+    mode: slider
+
+  # mmWave zones
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    presence_timeout:
+      name: "Timeout"
+    zone_1:
+      x1:
+        name: Zone-1 X1
+      y1:
+        name: Zone-1 Y1
+      x2:
+        name: Zone-1 X2
+      y2:
+        name: Zone-1 Y2
+    zone_2:
+      x1:
+        name: Zone-2 X1
+      y1:
+        name: Zone-2 Y1
+      x2:
+        name: Zone-2 X2
+      y2:
+        name: Zone-2 Y2
+    zone_3:
+      x1:
+        name: Zone-3 X1
+      y1:
+        name: Zone-3 Y1
+      x2:
+        name: Zone-3 X2
+      y2:
+        name: Zone-3 Y2
+
+binary_sensor:
+  # PIR
+  - platform: gpio
+    pin:
+      number: 9
+      # number: GPIO16
+      mode: INPUT_PULLDOWN
+    name: PIR
+    id: pir_motion_sensor
+    device_class: motion
+    filters:
+      - delayed_off:  !lambda 'return id(pir_off_latency).state * 1000.0;'
+
+  # mmWave presence sensor
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    has_target:
+      name: Presence
+    has_moving_target:
+      name: Moving Target
+    has_still_target:
+      name: Still Target
+
+# mmWave selects
+select:
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    baud_rate:
+      name: "Baud rate"
+    zone_type:
+      name: "Zone Type"
+
+button:
+  # Restart
+  - platform: restart
+    name: "Restart"
+    id: restart_os5
+
+  # mmWave reset
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    factory_reset:
+      name: "LD2450 Factory Reset"
+      entity_category: "config"
+    restart:
+      name: "LD2450 Restart"
+      entity_category: "config"
+
+sensor:
+  # Uptime sensor
+  - platform: uptime
+    name: "Uptime"
+    icon: mdi:clock-start
+    update_interval: 60s
+
+  # Temperature and Humidity
+  - platform: dht
+    # pin: GPIO13
+    pin: 11
+    temperature:
+      name: "Temperature"
+      id: temperature
+      filters:
+        - offset: -1.0
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 10
+    humidity:
+      name: "Humidity"
+      id: humidity
+      filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 10
+    update_interval: 10s
+    model: DHT11
+
+  # LUX
+  - platform: adc
+    pin: 7
+    name: "Illuminance"
+    id: illuminance
+    update_interval: '10s'
+    unit_of_measurement: lux
+    # Filter fix for KY-018
+    #   https://community.home-assistant.io/t/126274/11
+    #   https://community.home-assistant.io/t/126274/17
+    filters:
+      - lambda: |-
+          return ((x / 10000.0) * -2000000.0) + 200;
+
+  # mmWave sensors
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    target_count:
+      name: Presence Target Count
+    still_target_count:
+      name: Still Target Count
+    moving_target_count:
+      name: Moving Target Count
+    target_1:
+      x:
+        name: Target-1 X
+      y:
+        name: Target-1 Y
+      speed:
+        name: Target-1 Speed
+      angle:
+        name: Target-1 Angle
+      distance:
+        name: Target-1 Distance
+      resolution:
+        name: Target-1 Resolution
+    target_2:
+      x:
+        name: Target-2 X
+      y:
+        name: Target-2 Y
+      speed:
+        name: Target-2 Speed
+      angle:
+        name: Target-2 Angle
+      distance:
+        name: Target-2 Distance
+      resolution:
+        name: Target-2 Resolution
+    target_3:
+      x:
+        name: Target-3 X
+      y:
+        name: Target-3 Y
+      speed:
+        name: Target-3 Speed
+      angle:
+        name: Target-3 Angle
+      distance:
+        name: Target-3 Distance
+      resolution:
+        name: Target-3 Resolution
+    zone_1:
+      target_count:
+        name: Zone-1 All Target Count
+      still_target_count:
+        name: Zone-1 Still Target Count
+      moving_target_count:
+        name: Zone-1 Moving Target Count
+    zone_2:
+      target_count:
+        name: Zone-2 All Target Count
+      still_target_count:
+        name: Zone-2 Still Target Count
+      moving_target_count:
+        name: Zone-2 Moving Target Count
+    zone_3:
+      target_count:
+        name: Zone-3 All Target Count
+      still_target_count:
+        name: Zone-3 Still Target Count
+      moving_target_count:
+        name: Zone-3 Moving Target Count
