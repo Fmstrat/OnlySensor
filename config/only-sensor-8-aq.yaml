@@ -1,8 +1,5 @@
 substitutions:
   update_interval: '60s' # every 1 minute
-  # window_size: 480 # every 3 minutes for 24 hours
-  # send_every: 20 # hourly
-  # send_first_at: 20
   window_size: '60' # every 1 minute for 1 hour
   send_every: '1' # every 1 minute
   send_first_at: '1' # first minute
