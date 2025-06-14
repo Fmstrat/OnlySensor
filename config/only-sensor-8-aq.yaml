@@ -1,7 +1,10 @@
 substitutions:
   update_interval: '60s' # every 1 minute
+  # window_size: 480 # every 3 minutes for 24 hours
+  # send_every: 20 # hourly
+  # send_first_at: 20
   window_size: '60' # every 1 minute for 1 hour
-  send_every: '60' # every 1 minute
+  send_every: '1' # every 1 minute
   send_first_at: '1' # first minute
 
 esphome:
@@ -240,9 +243,9 @@ sensor:
     accuracy_decimals: 1
     filters:
     - sliding_window_moving_average:
-        window_size: 60 # every 1 minute for 1 hour
-        send_every: 60 # every 1 minute
-        send_first_at: 1 # first minute
+        window_size: ${window_size}
+        send_every: ${send_every}
+        send_first_at: ${send_first_at}
     on_value:
       lambda: |-
         static int i = 0;
