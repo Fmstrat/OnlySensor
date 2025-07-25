@@ -192,7 +192,8 @@ sensor:
         static int i = 0;
         i++;
         if (i >= 1) { // Don't run until after N send_every
-          // https://en.wikipedia.org/wiki/Air_quality_index#United_States
+          // Values: https://en.wikipedia.org/wiki/Air_quality_index#United_States
+          // Formula: https://forum.airnowtech.org/t/the-aqi-equation/169
           if (id(pm_2_5).state <= 9.0) {
             // good
             id(pm_2_5_aqi_description).publish_state("Good");
@@ -248,7 +249,8 @@ sensor:
         static int i = 0;
         i++;
         if (i >= 1) { // Don't run until after N send_every
-          // https://en.wikipedia.org/wiki/Air_quality_index#United_States
+          // Values: https://en.wikipedia.org/wiki/Air_quality_index#United_States
+          // Formula: https://forum.airnowtech.org/t/the-aqi-equation/169
           if (id(pm_10_0).state <= 54.0) {
             // good
             id(pm_10_0_aqi_description).publish_state("Good");
@@ -259,16 +261,16 @@ sensor:
             id(pm_10_0_aqi_description).publish_state("Moderate");
             id(pm_10_0_aqi_color).publish_state("Yellow");
             id(pm_10_0_aqi).publish_state((100.0 - 51.0) / (154.0 - 55.0) * (id(pm_10_0).state - 55.0) + 51.0);
-          } else if (id(pm_10_0).state <= 204.0) {
+          } else if (id(pm_10_0).state <= 254.0) {
             // Unhealthy for Sensitive Groups
             id(pm_10_0_aqi_description).publish_state("Unhealthy for Sensitive Groups");
             id(pm_10_0_aqi_color).publish_state("Orange");
-            id(pm_10_0_aqi).publish_state((150.0 - 101.0) / (204.0 - 155.0) * (id(pm_10_0).state - 155.0) + 101.0);
+            id(pm_10_0_aqi).publish_state((150.0 - 101.0) / (254.0 - 155.0) * (id(pm_10_0).state - 155.0) + 101.0);
           } else if (id(pm_10_0).state <= 354.0) {
             // unhealthy
             id(pm_10_0_aqi_description).publish_state("Unhealthy");
             id(pm_10_0_aqi_color).publish_state("Red");
-            id(pm_10_0_aqi).publish_state((200.0 - 151.0) / (354.0 - 205.0) * (id(pm_10_0).state - 205.0) + 151.0);
+            id(pm_10_0_aqi).publish_state((200.0 - 151.0) / (354.0 - 255.0) * (id(pm_10_0).state - 255.0) + 151.0);
           } else if (id(pm_10_0).state <= 424.0) {
             // very unhealthy
             id(pm_10_0_aqi_description).publish_state("Very Unhealthy");
