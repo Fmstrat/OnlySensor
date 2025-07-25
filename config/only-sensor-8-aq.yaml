@@ -162,12 +162,12 @@ sensor:
       name: "NOX"
       id: nox
       algorithm_tuning:
-        index_offset: 100
+        index_offset: 1
         learning_time_offset_hours: 12
         learning_time_gain_hours: 12
-        gating_max_duration_minutes: 180
+        gating_max_duration_minutes: 720
         std_initial: 50
-        gain_factor: 230        
+        gain_factor: 230
     temperature_compensation:
       offset: 0
       normalized_offset_slope: 0
