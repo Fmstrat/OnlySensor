@@ -33,9 +33,12 @@ api:
 
 # OTA
 ota:
-  safe_mode: true
   password: !secret ota_pass
   port: 3232
+  platform: esphome
+
+# Safe mode
+safe_mode:
 
 # Wifi
 wifi:
@@ -79,7 +82,6 @@ uart:
 ld2450:
   id: ld2450_radar
   uart_id: uart_ld2450
-  throttle: 1000ms
 
 switch:
   # Switch for toggling safe mode
